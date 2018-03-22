@@ -4,7 +4,7 @@ AC_PREREQ(2.61)
 dnl ----------------------------------------
 dnl Information on this package.
 dnl ----------------------------------------
-AC_INIT([sample-v4l], [0.1])
+AC_INIT([sample-v4l2], [0.1])
 
 AC_ARG_PROGRAM()
 
