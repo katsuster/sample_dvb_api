@@ -1,7 +1,7 @@
 
 bin_PROGRAMS = sample_v4l2
 
-sample_v4l2_SOURCES = main.c
+sample_v4l2_SOURCES = main.c dump.c
 
 sample_v4l2_CPPFLAGS = $(omxil_mf_common_cppflags) \
 	-I$(top_srcdir)/include \

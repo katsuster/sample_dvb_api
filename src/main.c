@@ -1,4 +1,161 @@
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <linux/dvb/dmx.h>
+#include <linux/dvb/frontend.h>
+#include <linux/videodev2.h>
+
+#include "dump.h"
+#include "util.h"
+
+int snprintf_add(char *str, size_t size, const char *format, ...)
+{
+	char *buf = NULL;
+	size_t s;
+	int ret = 0;
+	va_list ap;
+
+	s = size - strlen(str);
+	buf = calloc(s, sizeof(char));
+	if (buf == NULL)
+		goto err_out;
+
+	va_start(ap, format);
+	ret = vsnprintf(buf, s, format, ap);
+	va_end(ap);
+	strncat(str, buf, size);
+
+err_out:
+	free(buf);
+
+	return ret;
+}
+
+static struct dtv_property props[] = {
+	{ .cmd = DTV_CLEAR },
+	{ .cmd = DTV_DELIVERY_SYSTEM,   .u.data = SYS_ISDBT, },
+	{ .cmd = DTV_FREQUENCY,         .u.data = 473142857, },
+	/*{ .cmd = DTV_BANDWIDTH_HZ,      .u.data = 6000000, },
+	{ .cmd = DTV_INVERSION,         .u.data = INVERSION_AUTO, },
+	{ .cmd = DTV_GUARD_INTERVAL,    .u.data = GUARD_INTERVAL_AUTO, },
+	{ .cmd = DTV_TRANSMISSION_MODE, .u.data = TRANSMISSION_MODE_AUTO, },
+
+	{ .cmd = DTV_ISDBT_LAYER_ENABLED,      .u.data = -1, },
+	{ .cmd = DTV_ISDBT_PARTIAL_RECEPTION,  .u.data = 1, },
+	{ .cmd = DTV_ISDBT_SOUND_BROADCASTING, .u.data = 0, },
+
+	{ .cmd = DTV_ISDBT_LAYERA_FEC,               .u.data = FEC_AUTO, },
+	{ .cmd = DTV_ISDBT_LAYERA_MODULATION,        .u.data = QPSK, },
+	{ .cmd = DTV_ISDBT_LAYERA_SEGMENT_COUNT,     .u.data = 1, },
+	{ .cmd = DTV_ISDBT_LAYERA_TIME_INTERLEAVING, .u.data = 8, },
+
+	{ .cmd = DTV_ISDBT_LAYERB_FEC,               .u.data = FEC_AUTO, },
+	{ .cmd = DTV_ISDBT_LAYERB_MODULATION,        .u.data = QAM_AUTO, },
+	{ .cmd = DTV_ISDBT_LAYERB_SEGMENT_COUNT,     .u.data = 12, },
+	{ .cmd = DTV_ISDBT_LAYERB_TIME_INTERLEAVING, .u.data = 2, },*/
+	{ .cmd = DTV_TUNE },
+};
+
 int main()
 {
-	return 0;
+	const char *fe_file = "/dev/dvb/adapter1/frontend0";
+	const char *demux_file = "/dev/dvb/adapter1/demux0";
+	int fd_fe = -1, fd_demux = -1;
+	struct dvb_frontend_info inf_fe;
+	unsigned int st_fe;
+	struct dtv_properties dtv_prop = {
+		.num = ARRAY_SIZE(props),
+		.props = props,
+	};
+	struct dmx_pes_filter_params fil_demux;
+	int ret;
+
+	fd_fe = open(fe_file, O_RDWR);
+	if (fd_fe == -1) {
+		perror("open(fe)");
+		goto err_out;
+	}
+
+	fd_demux = open(demux_file, O_RDWR);
+	if (fd_demux == -1) {
+		perror("open(demux)");
+		goto err_out;
+	}
+
+	ret = ioctl(fd_fe, FE_GET_INFO, &inf_fe);
+	if (ret == -1) {
+		perror("ioctl(fe, get info)");
+		goto err_out;
+	}
+	dump_dvb_frontend_info(&inf_fe);
+	printf("\n");
+
+	ret = ioctl(fd_fe, FE_READ_STATUS, &st_fe);
+	if (ret == -1) {
+		perror("ioctl(fe, read status)");
+		goto err_out;
+	}
+	dump_frontend_status(st_fe);
+	printf("\n");
+
+	ret = ioctl(fd_fe, FE_SET_PROPERTY, &dtv_prop);
+	if (ret == -1) {
+		perror("ioctl(fe, set prop)");
+		goto err_out;
+	}
+
+	fil_demux.pid = 0x2000;
+	fil_demux.input = DMX_IN_FRONTEND;
+	fil_demux.output = DMX_OUT_TS_TAP;
+	fil_demux.pes_type = DMX_PES_VIDEO;
+	fil_demux.flags = DMX_IMMEDIATE_START;
+
+	ret = ioctl(fd_demux, DMX_SET_PES_FILTER, &fil_demux);
+	if (ret == -1) {
+		perror("ioctl(demux, set filter)");
+		goto err_out;
+	}
+
+	while (1) {
+		sleep(1);
+
+		ret = ioctl(fd_fe, FE_GET_INFO, &inf_fe);
+		if (ret == -1) {
+			perror("ioctl(fe, get info2)");
+			goto err_out;
+		}
+		dump_dvb_frontend_info(&inf_fe);
+		printf("\n");
+
+		ret = ioctl(fd_fe, FE_READ_STATUS, &st_fe);
+		if (ret == -1) {
+			perror("ioctl(fe, read status2)");
+			goto err_out;
+		}
+		dump_frontend_status(st_fe);
+		printf("\n");
+
+		dump_dtv_property(fd_fe, DTV_STAT_SIGNAL_STRENGTH);
+		dump_dtv_property(fd_fe, DTV_STAT_CNR);
+		dump_dtv_property(fd_fe, DTV_STAT_PRE_ERROR_BIT_COUNT);
+	}
+
+	//success
+	ret = 0;
+
+err_out:
+	if (fd_demux != -1)
+		close(fd_demux);
+	if (fd_fe != -1)
+		close(fd_fe);
+
+	return ret;
 }
