@@ -64,10 +64,15 @@ static struct dtv_property props[] = {
 	{ .cmd = DTV_TUNE },
 };
 
-int main()
+void usage(int argc, char *argv[])
 {
-	const char *fe_file = "/dev/dvb/adapter1/frontend0";
-	const char *demux_file = "/dev/dvb/adapter1/demux0";
+	fprintf(stderr, "usage:\n  %s adapter ch\n", argv[0]);
+}
+
+int main(int argc, char *argv[])
+{
+	char fe_file[1024], demux_file[1024];
+	int arg_adapt;
 	int fd_fe = -1, fd_demux = -1;
 	struct dvb_frontend_info inf_fe;
 	unsigned int st_fe;
@@ -78,15 +83,32 @@ int main()
 	struct dmx_pes_filter_params fil_demux;
 	int ret;
 
+	if (argc < 3) {
+		usage(argc, argv);
+		return -1;
+	}
+
+	arg_adapt = strtol(argv[1], NULL, 0);
+	if (arg_adapt < 0) {
+		usage(argc, argv);
+		return -1;
+	}
+
+	snprintf(fe_file, sizeof(fe_file), "/dev/dvb/adapter%d/frontend0",
+		arg_adapt);
 	fd_fe = open(fe_file, O_RDWR);
 	if (fd_fe == -1) {
 		perror("open(fe)");
+		fprintf(stderr, "Cannot open '%s'.", fe_file);
 		goto err_out;
 	}
 
+	snprintf(demux_file, sizeof(demux_file), "/dev/dvb/adapter%d/demux0",
+		arg_adapt);
 	fd_demux = open(demux_file, O_RDWR);
 	if (fd_demux == -1) {
 		perror("open(demux)");
+		fprintf(stderr, "Cannot open '%s'.", demux_file);
 		goto err_out;
 	}
 
