@@ -72,7 +72,7 @@ void usage(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	char fe_file[1024], demux_file[1024];
-	int arg_adapt;
+	int arg_adapt, arg_ch;
 	int fd_fe = -1, fd_demux = -1;
 	struct dvb_frontend_info inf_fe;
 	unsigned int st_fe;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 		.props = props,
 	};
 	struct dmx_pes_filter_params fil_demux;
-	int ret;
+	int ret, i;
 
 	if (argc < 3) {
 		usage(argc, argv);
@@ -90,6 +90,14 @@ int main(int argc, char *argv[])
 
 	arg_adapt = strtol(argv[1], NULL, 0);
 	if (arg_adapt < 0) {
+		fprintf(stderr, "Invalid adapter %d.", arg_adapt);
+		usage(argc, argv);
+		return -1;
+	}
+	arg_ch = strtol(argv[2], NULL, 0);
+	if (arg_ch < 13 || 52 < arg_ch) {
+		fprintf(stderr, "Invalid channel %d, 13 ... 52 is available.",
+			arg_ch);
 		usage(argc, argv);
 		return -1;
 	}
@@ -128,6 +136,11 @@ int main(int argc, char *argv[])
 	dump_frontend_status(st_fe);
 	printf("\n");
 
+	for (i = 0; i < ARRAY_SIZE(props); i++) {
+		if (props[i].cmd == DTV_FREQUENCY) {
+			props[i].u.data = 473142857 + 6000000 * (arg_ch - 13);
+		}
+	}
 	ret = ioctl(fd_fe, FE_SET_PROPERTY, &dtv_prop);
 	if (ret == -1) {
 		perror("ioctl(fe, set prop)");
@@ -165,6 +178,7 @@ int main(int argc, char *argv[])
 		dump_frontend_status(st_fe);
 		printf("\n");
 
+		dump_dtv_property(fd_fe, DTV_FREQUENCY);
 		dump_dtv_property(fd_fe, DTV_STAT_SIGNAL_STRENGTH);
 		dump_dtv_property(fd_fe, DTV_STAT_CNR);
 		dump_dtv_property(fd_fe, DTV_STAT_PRE_ERROR_BIT_COUNT);

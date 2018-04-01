@@ -149,8 +149,8 @@ void dump_dtv_property(int fd, __u32 cmd)
 
 	//if (dump == NULL) {
 	{
-		printf("dtv_property: %d\n  len: %d, data: 0x%x\n",
-			cmd, prop.u.st.len, prop.u.data);
+		printf("dtv_property: %d\n  len: %d, data: %d (0x%x)\n",
+			cmd, prop.u.st.len, prop.u.data, prop.u.data);
 	}
 	//dump();
 }
