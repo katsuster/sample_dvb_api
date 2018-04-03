@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <sys/ioctl.h>
 
@@ -124,33 +125,134 @@ void dump_frontend_status(unsigned int v)
 	printf("    %s\n", buf);
 }
 
-void dump_dtv_property_cmd(__u32 cmd)
+const char *dump_dtv_property_cmd(__u32 cmd)
 {
 	const char *name = "????";
 
+	switch (cmd) {
+	case DTV_UNDEFINED:
+		name = "UNDEFINED";
+		break;
+	case DTV_TUNE:
+		name = "TUNE";
+		break;
+	case DTV_CLEAR:
+		name = "CLEAR";
+		break;
+	case DTV_FREQUENCY:
+		name = "FREQUENCY";
+		break;
+	case DTV_MODULATION:
+		name = "MODULATION";
+		break;
+	case DTV_BANDWIDTH_HZ:
+		name = "BANDWIDTH_HZ";
+		break;
+	case DTV_INVERSION:
+		name = "INVERSION";
+		break;
+	case DTV_DISEQC_MASTER:
+		name = "DISEQC_MASTER";
+		break;
+	case DTV_SYMBOL_RATE:
+		name = "SYMBOL_RATE";
+		break;
+	case DTV_INNER_FEC:
+		name = "INNER_FEC";
+		break;
+	case DTV_VOLTAGE:
+		name = "VOLTAGE";
+		break;
+	case DTV_TONE:
+		name = "TONE";
+		break;
+	case DTV_PILOT:
+		name = "PILOT";
+		break;
+	case DTV_ROLLOFF:
+		name = "ROLLOFF";
+		break;
+	case DTV_DISEQC_SLAVE_REPLY:
+		name = "DISEQC_SLAVE_REPLY";
+		break;
+	case DTV_STAT_SIGNAL_STRENGTH:
+		name = "SIGNAL_STRENGTH";
+		break;
+	case DTV_STAT_CNR:
+		name = "CNR";
+		break;
+	case DTV_STAT_PRE_ERROR_BIT_COUNT:
+		name = "PRE_ERROR_BIT_COUNT";
+		break;
+	case DTV_STAT_PRE_TOTAL_BIT_COUNT:
+		name = "PRE_TOTAL_BIT_COUNT";
+		break;
+	case DTV_STAT_POST_ERROR_BIT_COUNT:
+		name = "POST_ERROR_BIT_COUNT";
+		break;
+	case DTV_STAT_POST_TOTAL_BIT_COUNT:
+		name = "POST_TOTAL_BIT_COUNT";
+		break;
+	case DTV_STAT_ERROR_BLOCK_COUNT:
+		name = "ERROR_BLOCK_COUNT";
+		break;
+	case DTV_STAT_TOTAL_BLOCK_COUNT:
+		name = "TOTAL_BLOCK_COUNT";
+		break;
+	default:
+		name = "unknown";
+		break;
+	}
 
+	return name;
 }
 
-void dump_dtv_property(int fd, __u32 cmd)
+void dump_func_data(const struct dtv_property *prop)
 {
-	struct dtv_property prop;
-	struct dtv_properties dtv_prop = {
-		.num = 1,
-		.props = &prop,
-	};
-	int ret;
+	printf("  %20s(%2d): data:%d(0x%x)\n",
+		dump_dtv_property_cmd(prop->cmd), prop->cmd,
+		prop->u.data, prop->u.data);
+}
 
-	prop.cmd = cmd;
+void dump_func_stat(const struct dtv_property *prop)
+{
+	printf("  %20s(%2d): len:%d, "
+		"scale:%d, data:%d(0x%x)\n",
+		dump_dtv_property_cmd(prop->cmd),
+		prop->cmd, prop->u.st.len,
+		prop->u.st.stat[0].scale,
+		prop->u.st.stat[0].uvalue,
+		prop->u.st.stat[0].uvalue);
+}
 
+void dump_dtv_stat(int fd, __u32 *cmds, int len, dump_func_t fn)
+{
+	struct dtv_property *props;
+	struct dtv_properties dtv_prop;
+	int ret, i;
+
+	if (len <= 0)
+		return;
+
+	props = calloc(len, sizeof(struct dtv_property));
+	if (props == NULL)
+		return;
+
+	for (i = 0; i < len; i++) {
+		props[i].cmd = cmds[i];
+	}
+
+	dtv_prop.num = len;
+	dtv_prop.props = props;
 	ret = ioctl(fd, FE_GET_PROPERTY, &dtv_prop);
 	if (ret == -1) {
 		perror("ioctl(fe, get prop)");
 	}
 
-	//if (dump == NULL) {
-	{
-		printf("dtv_property: %d\n  len: %d, data: %d (0x%x)\n",
-			cmd, prop.u.st.len, prop.u.data, prop.u.data);
+	for (i = 0; i < len; i++) {
+		if (fn)
+			fn(&props[i]);
 	}
-	//dump();
+
+	free(props);
 }

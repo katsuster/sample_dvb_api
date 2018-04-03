@@ -160,6 +160,15 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
+		__u32 cmds_dat[] = {
+			DTV_FREQUENCY,
+		};
+		__u32 cmds_stat[] = {
+			DTV_STAT_SIGNAL_STRENGTH,
+			DTV_STAT_CNR,
+			DTV_STAT_PRE_ERROR_BIT_COUNT,
+		};
+
 		sleep(1);
 
 		ret = ioctl(fd_fe, FE_GET_INFO, &inf_fe);
@@ -178,10 +187,10 @@ int main(int argc, char *argv[])
 		dump_frontend_status(st_fe);
 		printf("\n");
 
-		dump_dtv_property(fd_fe, DTV_FREQUENCY);
-		dump_dtv_property(fd_fe, DTV_STAT_SIGNAL_STRENGTH);
-		dump_dtv_property(fd_fe, DTV_STAT_CNR);
-		dump_dtv_property(fd_fe, DTV_STAT_PRE_ERROR_BIT_COUNT);
+		dump_dtv_stat(fd_fe, cmds_dat, ARRAY_SIZE(cmds_dat),
+			dump_func_data);
+		dump_dtv_stat(fd_fe, cmds_stat, ARRAY_SIZE(cmds_stat),
+			dump_func_stat);
 	}
 
 	//success
