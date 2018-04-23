@@ -105,8 +105,8 @@ void dump_frontend_status(unsigned int v)
 
 	printf("frontend status:\n  status: 0x%x\n", v);
 
-	if (v & FE_NONE)
-		snprintf_add(buf, sizeof(buf), "%s, ", "NONE");
+	//if (v & FE_NONE)
+	//	snprintf_add(buf, sizeof(buf), "%s, ", "NONE");
 	if (v & FE_HAS_SIGNAL)
 		snprintf_add(buf, sizeof(buf), "%s, ", "HAS_SIGNAL");
 	if (v & FE_HAS_CARRIER)
