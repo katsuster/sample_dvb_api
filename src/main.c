@@ -19,6 +19,7 @@
 
 enum TRANS {
 	TRANS_BS,
+	TRANS_CS110,
 	TRANS_CS,
 };
 
@@ -101,7 +102,7 @@ void usage(int argc, char *argv[])
 		"  ISDB-T\n"
 		"    %s adapter T ch\n"
 		"  ISDB-S\n"
-		"    %s adapter S [BS|CS] ch TS-ID\n",
+		"    %s adapter S [BS|CS110] ch TS-ID\n",
 		argv[0], argv[0]);
 }
 
@@ -209,14 +210,16 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 	arg_trans = argv[3];
 	if (strncasecmp(arg_trans, "BS", 2) == 0) {
 		t->trans = TRANS_BS;
+	} else if (strncasecmp(arg_trans, "CS110", 2) == 0) {
+		t->trans = TRANS_CS110;
 	} else {
 		fprintf(stderr, "Not surppoted '%s'.\n",
 			arg_trans);
 		return -1;
 	}
 
+	t->ch = strtol(argv[4], NULL, 0);
 	if (t->trans == TRANS_BS) {
-		t->ch = strtol(argv[4], NULL, 0);
 		if (t->ch < 1 || 23 < t->ch) {
 			fprintf(stderr, "Invalid channel %d, "
 				"BS 1 ... BS 23 is available.\n",
@@ -224,6 +227,14 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 			return -1;
 		}
 		t->freq = 1049480000 + 38360000 * (t->ch - 1);
+	} else if (t->trans == TRANS_CS110) {
+		if (t->ch < 1 || 24 < t->ch) {
+			fprintf(stderr, "Invalid channel %d, "
+				"ND 1 ... ND 24 is available.\n",
+				t->ch);
+			return -1;
+		}
+		t->freq = 1593000000 + 20000000 * (t->ch - 1);
 	}
 
 	t->tsid = strtol(argv[5], NULL, 0);
