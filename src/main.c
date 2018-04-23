@@ -102,7 +102,7 @@ void usage(int argc, char *argv[])
 		"    %s adapter T ch\n"
 		"  ISDB-S\n"
 		"    %s adapter S [BS|CS] ch TS-ID\n",
-		argv[0]);
+		argv[0], argv[0]);
 }
 
 static int open_frontend(struct tune_info *t)
