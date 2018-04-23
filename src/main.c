@@ -106,7 +106,7 @@ static int open_frontend(struct tune_info *t)
 	t->fd_fe = open(fe_file, O_RDWR);
 	if (t->fd_fe == -1) {
 		perror("open(fe)");
-		fprintf(stderr, "Cannot open '%s'.", fe_file);
+		fprintf(stderr, "Cannot open '%s'.\n", fe_file);
 		goto err_out;
 	}
 
@@ -115,7 +115,7 @@ static int open_frontend(struct tune_info *t)
 	t->fd_demux = open(demux_file, O_RDWR);
 	if (t->fd_demux == -1) {
 		perror("open(demux)");
-		fprintf(stderr, "Cannot open '%s'.", demux_file);
+		fprintf(stderr, "Cannot open '%s'.\n", demux_file);
 		goto err_out;
 	}
 
@@ -138,57 +138,11 @@ static int close_frontend(struct tune_info *t)
 	return 0;
 }
 
-static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
+static int show_frontend(struct tune_info *t)
 {
-	return 0;
-}
-
-static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
-{
-	struct dtv_properties dtv_prop = {
-		.num = t->size_props,
-		.props = t->props,
-	};
-	struct dmx_pes_filter_params fil_demux;
 	struct dvb_frontend_info inf_fe;
 	unsigned int st_fe;
-	int ret, i;
-
-	if (argc < 4) {
-		usage(argc, argv);
-		return -1;
-	}
-
-	t->ch = strtol(argv[3], NULL, 0);
-	if (t->ch < 13 || 52 < t->ch) {
-		fprintf(stderr, "Invalid channel %d, "
-			"13 ... 52 is available.", t->ch);
-		usage(argc, argv);
-		return -1;
-	}
-
-	for (i = 0; i < t->size_props; i++) {
-		if (t->props[i].cmd == DTV_FREQUENCY) {
-			t->props[i].u.data = 473142857 + 6000000 * (t->ch - 13);
-		}
-	}
-	ret = ioctl(t->fd_fe, FE_SET_PROPERTY, &dtv_prop);
-	if (ret == -1) {
-		perror("ioctl(fe, set prop)");
-		goto err_out;
-	}
-
-	fil_demux.pid = 0x2000;
-	fil_demux.input = DMX_IN_FRONTEND;
-	fil_demux.output = DMX_OUT_TS_TAP;
-	fil_demux.pes_type = DMX_PES_VIDEO;
-	fil_demux.flags = DMX_IMMEDIATE_START;
-
-	ret = ioctl(t->fd_demux, DMX_SET_PES_FILTER, &fil_demux);
-	if (ret == -1) {
-		perror("ioctl(demux, set filter)");
-		goto err_out;
-	}
+	int ret;
 
 	while (1) {
 		__u32 cmds_dat[] = {
@@ -234,6 +188,74 @@ err_out:
 	return ret;
 }
 
+static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
+{
+	return 0;
+}
+
+static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
+{
+	struct dtv_properties dtv_prop = {
+		.num = t->size_props,
+		.props = t->props,
+	};
+	int ret, i;
+
+	if (argc < 4) {
+		usage(argc, argv);
+		return -1;
+	}
+
+	t->ch = strtol(argv[3], NULL, 0);
+	if (t->ch < 13 || 52 < t->ch) {
+		fprintf(stderr, "Invalid channel %d, "
+			"13 ... 52 is available.\n", t->ch);
+		usage(argc, argv);
+		return -1;
+	}
+
+	for (i = 0; i < t->size_props; i++) {
+		if (t->props[i].cmd == DTV_FREQUENCY) {
+			t->props[i].u.data = 473142857 + 6000000 * (t->ch - 13);
+		}
+	}
+	ret = ioctl(t->fd_fe, FE_SET_PROPERTY, &dtv_prop);
+	if (ret == -1) {
+		perror("ioctl(fe, set prop)");
+		goto err_out;
+	}
+
+	//success
+	ret = 0;
+
+err_out:
+	return ret;
+}
+
+static int tune_common(struct tune_info *t)
+{
+	struct dmx_pes_filter_params fil_demux;
+	int ret;
+
+	fil_demux.pid = 0x2000;
+	fil_demux.input = DMX_IN_FRONTEND;
+	fil_demux.output = DMX_OUT_TS_TAP;
+	fil_demux.pes_type = DMX_PES_VIDEO;
+	fil_demux.flags = DMX_IMMEDIATE_START;
+
+	ret = ioctl(t->fd_demux, DMX_SET_PES_FILTER, &fil_demux);
+	if (ret == -1) {
+		perror("ioctl(demux, set filter)");
+		goto err_out;
+	}
+
+	//success
+	ret = 0;
+
+err_out:
+	return ret;
+}
+
 int main(int argc, char *argv[])
 {
 	struct tune_info tinfo;
@@ -252,15 +274,15 @@ int main(int argc, char *argv[])
 
 	t->adapt = strtol(argv[1], NULL, 0);
 	if (t->adapt < 0) {
-		fprintf(stderr, "Invalid adapter %d.", t->adapt);
+		fprintf(stderr, "Invalid adapter %d.\n", t->adapt);
 		usage(argc, argv);
-		return -1;
+		return 1;
 	}
 
 	ret = open_frontend(t);
 	if (ret) {
-		fprintf(stderr, "Cannot open frontend devices.");
-		return -1;
+		fprintf(stderr, "Cannot open frontend devices.\n");
+		return 2;
 	}
 
 	arg_system = argv[2];
@@ -279,13 +301,31 @@ int main(int argc, char *argv[])
 	} else {
 		fprintf(stderr, "Invalid system '%s'\n",
 			arg_system);
-		usage(argc, argv);
-		return -1;
+		ret = 3;
+		goto err_out;
 	}
-	if (ret)
-		return -1;
+	if (ret) {
+		ret = 4;
+		goto err_out;
+	}
 
+	ret = tune_common(t);
+	if (ret) {
+		ret = 5;
+		goto err_out;
+	}
+
+	ret = show_frontend(t);
+	if (ret) {
+		ret = 6;
+		goto err_out;
+	}
+
+	//success
+	ret = 0;
+
+err_out:
 	close_frontend(t);
 
-	return 0;
+	return ret;
 }
