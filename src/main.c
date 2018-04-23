@@ -17,6 +17,11 @@
 #include "dump.h"
 #include "util.h"
 
+enum TRANS {
+	TRANS_BS,
+	TRANS_CS,
+};
+
 struct tune_info {
 	int adapt;
 	int system;
@@ -25,10 +30,13 @@ struct tune_info {
 	struct dtv_property *props;
 	size_t size_props;
 
-	/* ISDB-T */
+	/* Common */
 	int ch;
+	__u64 freq;
 
 	/* ISDB-S */
+	int trans;
+	int tsid;
 };
 
 int snprintf_add(char *str, size_t size, const char *format, ...)
@@ -58,7 +66,7 @@ static struct dtv_property props_s[] = {
 	{ .cmd = DTV_CLEAR },
 	{ .cmd = DTV_DELIVERY_SYSTEM,   .u.data = SYS_ISDBS, },
 	{ .cmd = DTV_FREQUENCY,         .u.data = 1049480000, },
-
+	{ .cmd = DTV_STREAM_ID,         .u.data = 0, },
 	{ .cmd = DTV_TUNE },
 };
 
@@ -161,7 +169,7 @@ static int show_frontend(struct tune_info *t)
 
 		ret = ioctl(t->fd_fe, FE_GET_INFO, &inf_fe);
 		if (ret == -1) {
-			perror("ioctl(fe, get info2)");
+			perror("ioctl(fe, get info)");
 			goto err_out;
 		}
 		dump_dvb_frontend_info(&inf_fe);
@@ -169,7 +177,7 @@ static int show_frontend(struct tune_info *t)
 
 		ret = ioctl(t->fd_fe, FE_READ_STATUS, &st_fe);
 		if (ret == -1) {
-			perror("ioctl(fe, read status2)");
+			perror("ioctl(fe, read status)");
 			goto err_out;
 		}
 		dump_frontend_status(st_fe);
@@ -190,15 +198,50 @@ err_out:
 
 static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 {
+	const char *arg_trans;
+	int ret, i;
+
+	if (argc < 6) {
+		usage(argc, argv);
+		return -1;
+	}
+
+	arg_trans = argv[3];
+	if (strncasecmp(arg_trans, "BS", 2) == 0) {
+		t->trans = TRANS_BS;
+	} else {
+		fprintf(stderr, "Not surppoted '%s'.\n",
+			arg_trans);
+		return -1;
+	}
+
+	if (t->trans == TRANS_BS) {
+		t->ch = strtol(argv[4], NULL, 0);
+		if (t->ch < 1 || 23 < t->ch) {
+			fprintf(stderr, "Invalid channel %d, "
+				"BS 1 ... BS 23 is available.\n",
+				t->ch);
+			return -1;
+		}
+		t->freq = 1049480000 + 38360000 * (t->ch - 1);
+	}
+
+	t->tsid = strtol(argv[5], NULL, 0);
+	if (t->tsid < 0) {
+		fprintf(stderr, "Invalid TS-ID %d(0x%04x).\n",
+			t->tsid, t->tsid);
+		return 1;
+	}
+
+	for (i = 0; i < t->size_props; i++)
+		if (t->props[i].cmd == DTV_STREAM_ID)
+			t->props[i].u.data = t->tsid;
+
 	return 0;
 }
 
 static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
 {
-	struct dtv_properties dtv_prop = {
-		.num = t->size_props,
-		.props = t->props,
-	};
 	int ret, i;
 
 	if (argc < 4) {
@@ -213,17 +256,7 @@ static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
 		usage(argc, argv);
 		return -1;
 	}
-
-	for (i = 0; i < t->size_props; i++) {
-		if (t->props[i].cmd == DTV_FREQUENCY) {
-			t->props[i].u.data = 473142857 + 6000000 * (t->ch - 13);
-		}
-	}
-	ret = ioctl(t->fd_fe, FE_SET_PROPERTY, &dtv_prop);
-	if (ret == -1) {
-		perror("ioctl(fe, set prop)");
-		goto err_out;
-	}
+	t->freq = (__u64)473142857 + 6000000 * (t->ch - 13);
 
 	//success
 	ret = 0;
@@ -234,8 +267,22 @@ err_out:
 
 static int tune_common(struct tune_info *t)
 {
+	struct dtv_properties dtv_prop = {
+		.num = t->size_props,
+		.props = t->props,
+	};
 	struct dmx_pes_filter_params fil_demux;
-	int ret;
+	int ret, i;
+
+	for (i = 0; i < t->size_props; i++)
+		if (t->props[i].cmd == DTV_FREQUENCY)
+			t->props[i].u.data = t->freq;
+
+	ret = ioctl(t->fd_fe, FE_SET_PROPERTY, &dtv_prop);
+	if (ret == -1) {
+		perror("ioctl(fe, set prop)");
+		goto err_out;
+	}
 
 	fil_demux.pid = 0x2000;
 	fil_demux.input = DMX_IN_FRONTEND;
