@@ -226,7 +226,7 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 				t->ch);
 			return -1;
 		}
-		t->freq = 1049480000 + 38360000 * (t->ch - 1);
+		t->freq = 1049480000 + 19180000 * (t->ch - 1);
 	} else if (t->trans == TRANS_CS110) {
 		if (t->ch < 1 || 24 < t->ch) {
 			fprintf(stderr, "Invalid channel %d, "
