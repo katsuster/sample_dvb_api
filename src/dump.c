@@ -217,7 +217,7 @@ void dump_func_data(const struct dtv_property *prop)
 void dump_func_stat(const struct dtv_property *prop)
 {
 	printf("  %20s(%2d): len:%d, "
-		"scale:%d, data:%d(0x%x)\n",
+		"scale:%d, data:%lld(0x%llx)\n",
 		dump_dtv_property_cmd(prop->cmd),
 		prop->cmd, prop->u.st.len,
 		prop->u.st.stat[0].scale,
