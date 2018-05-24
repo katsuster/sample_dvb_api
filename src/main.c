@@ -75,8 +75,8 @@ static struct dtv_property props_t[] = {
 	{ .cmd = DTV_CLEAR },
 	{ .cmd = DTV_DELIVERY_SYSTEM,   .u.data = SYS_ISDBT, },
 	{ .cmd = DTV_FREQUENCY,         .u.data = 473142857, },
-	/*{ .cmd = DTV_BANDWIDTH_HZ,      .u.data = 6000000, },
-	{ .cmd = DTV_INVERSION,         .u.data = INVERSION_AUTO, },
+	{ .cmd = DTV_BANDWIDTH_HZ,      .u.data = 6000000, },
+	/*{ .cmd = DTV_INVERSION,         .u.data = INVERSION_AUTO, },
 	{ .cmd = DTV_GUARD_INTERVAL,    .u.data = GUARD_INTERVAL_AUTO, },
 	{ .cmd = DTV_TRANSMISSION_MODE, .u.data = TRANSMISSION_MODE_AUTO, },
 
