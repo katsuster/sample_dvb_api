@@ -256,3 +256,29 @@ void dump_dtv_stat(int fd, __u32 *cmds, int len, dump_func_t fn)
 
 	free(props);
 }
+
+void dump_old_dtv_stat(int fd)
+{
+	__u32 ber;
+	__u16 strength, snr;
+	int ret;
+
+	ret = ioctl(fd, FE_READ_BER, &ber);
+	if (ret == 0) {
+		printf("  %20s(--): data:%d(0x%x)\n",
+			"FE_READ_BER", ber, ber);
+	}
+
+	ret = ioctl(fd, FE_READ_SIGNAL_STRENGTH, &strength);
+	if (ret == 0) {
+		printf("  %20s(--): data:%d(0x%x)\n",
+			"FE_READ_SIGNAL_STRENGTH",
+			strength, strength);
+	}
+
+	ret = ioctl(fd, FE_READ_SNR, &snr);
+	if (ret == 0) {
+		printf("  %20s(--): data:%d(0x%x)\n",
+			"FE_READ_SNR", snr, snr);
+	}
+}

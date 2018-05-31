@@ -188,6 +188,7 @@ static int show_frontend(struct tune_info *t)
 			ARRAY_SIZE(cmds_dat), dump_func_data);
 		dump_dtv_stat(t->fd_fe, cmds_stat,
 			ARRAY_SIZE(cmds_stat), dump_func_stat);
+		dump_old_dtv_stat(t->fd_fe);
 	}
 
 	//success
