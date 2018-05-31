@@ -66,7 +66,7 @@ err_out:
 static struct dtv_property props_s[] = {
 	{ .cmd = DTV_CLEAR },
 	{ .cmd = DTV_DELIVERY_SYSTEM,   .u.data = SYS_ISDBS, },
-	{ .cmd = DTV_FREQUENCY,         .u.data = 1049480000, },
+	{ .cmd = DTV_FREQUENCY,         .u.data = 1049480, },
 	{ .cmd = DTV_STREAM_ID,         .u.data = 0, },
 	{ .cmd = DTV_TUNE },
 };
@@ -226,7 +226,8 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 				t->ch);
 			return -1;
 		}
-		t->freq = 1049480000 + 19180000 * (t->ch - 1);
+		/* freq is kHz in satellite system */
+		t->freq = 1049480 + 19180 * (t->ch - 1);
 	} else if (t->trans == TRANS_CS110) {
 		if (t->ch < 1 || 24 < t->ch) {
 			fprintf(stderr, "Invalid channel %d, "
@@ -234,7 +235,8 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 				t->ch);
 			return -1;
 		}
-		t->freq = 1593000000 + 20000000 * (t->ch - 1);
+		/* freq is kHz in satellite system */
+		t->freq = 1593000 + 20000 * (t->ch - 1);
 	}
 
 	t->tsid = strtol(argv[5], NULL, 0);
