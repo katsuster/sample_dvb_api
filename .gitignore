@@ -23,4 +23,5 @@ Makefile
 *.la
 *.lo
 *.o
+src/sample_dvb
 
