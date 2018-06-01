@@ -21,56 +21,14 @@ dnl ----------------------------------------
 dnl Checks for programs.
 dnl ----------------------------------------
 AC_PROG_CC()
-AC_PROG_CXX()
-dnl AC_PROG_AWK()
-dnl AC_PROG_INSTALL()
-dnl AC_PROG_LN_S()
-dnl AC_PROG_LIBTOOL()
-dnl AC_PROG_SED()
-dnl AM_PROG_CC_C_O()
-dnl AM_PROG_LIBTOOL()
-
-dnl AC_SUBST(VAR, [var_value])
-
-
-dnl ----------------------------------------
-dnl Checks for libraries.
-dnl ----------------------------------------
 
 
 dnl ----------------------------------------
 dnl Checks for header files.
 dnl ----------------------------------------
-dnl AC_HEADER_STDC()
+AC_HEADER_STDC()
 
-dnl AC_CHECK_HEADERS([fcntl.h stdlib.h string.h strings.h unistd.h])
-
-
-dnl ----------------------------------------
-dnl Checks for types, structures, compiler characteristics.
-dnl ----------------------------------------
-dnl AC_C_CONST()
-dnl AC_C_INLINE()
-
-dnl AC_TYPE_OFF_T()
-dnl AC_TYPE_SIZE_T()
-dnl AC_TYPE_SSIZE_T()
-dnl AC_CHECK_SIZEOF(unsigned long long int)
-
-
-dnl ----------------------------------------
-dnl Checks for library functions.
-dnl ----------------------------------------
-dnl AC_FUNC_MEMCMP()
-
-dnl AC_CHECK_FUNCS([memmove memset strcasecmp])
-dnl AC_CHECK_LIB([xxxx], [func_xxxx], [], 
-dnl	[AC_MSG_ERROR([cannot find libxxxx])])
-
-
-dnl ----------------------------------------
-dnl Checks for system services.
-dnl ----------------------------------------
+AC_CHECK_HEADERS([linux/dvb/frontend.h])
 
 
 dnl ----------------------------------------
