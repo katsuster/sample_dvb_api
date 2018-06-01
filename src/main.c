@@ -201,7 +201,7 @@ err_out:
 static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 {
 	const char *arg_trans;
-	int ret, i;
+	int i;
 
 	if (argc < 6) {
 		usage(argc, argv);
@@ -256,8 +256,6 @@ static int tune_isdb_s(int argc, char *argv[], struct tune_info *t)
 
 static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
 {
-	int ret, i;
-
 	if (argc < 4) {
 		usage(argc, argv);
 		return -1;
@@ -272,11 +270,7 @@ static int tune_isdb_t(int argc, char *argv[], struct tune_info *t)
 	}
 	t->freq = (__u64)473142857 + 6000000 * (t->ch - 13);
 
-	//success
-	ret = 0;
-
-err_out:
-	return ret;
+	return 0;
 }
 
 static int tune_common(struct tune_info *t)
@@ -322,7 +316,7 @@ int main(int argc, char *argv[])
 	struct tune_info tinfo;
 	struct tune_info *t = &tinfo;
 	const char *arg_system;
-	int ret, i;
+	int ret;
 
 	memset(t, 0, sizeof(*t));
 	t->fd_fe = -1;
