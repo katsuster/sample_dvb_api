@@ -2,6 +2,14 @@
 
 This is a simple tuning tool for ISDB-S/ISDB-T using Linux DVB API tuners.
 
+# How to build
+
+    git clone https://github.com/katsuster/sample_dvb_api
+    cd sample_dvb_api
+    autoreconf -fi
+    ./configure
+    make
+
 # How to Use
 
     ISDB-S
